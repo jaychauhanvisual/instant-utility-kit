@@ -74,10 +74,26 @@ export default function CropImage() {
   };
 
   const handleDownload = () => {
-    // In a real implementation, this would download the cropped image
+    if (!resultUrl) {
+      toast({
+        title: "No image to download",
+        description: "Please crop an image first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create an anchor element and trigger download
+    const link = document.createElement('a');
+    link.href = resultUrl;
+    link.download = file ? `cropped-${file.name}` : 'cropped-image.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
     toast({
-      title: "Feature coming soon",
-      description: "Download functionality will be available in the next update.",
+      title: "Download started",
+      description: "Your cropped image is downloading.",
     });
   };
 
