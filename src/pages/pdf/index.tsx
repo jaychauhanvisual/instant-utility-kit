@@ -2,7 +2,7 @@
 import { FC } from 'react';
 import CategoryLayout from '@/components/CategoryLayout';
 import ToolCard from '@/components/ToolCard';
-import { Merge, Split, Compress, FileText } from 'lucide-react';
+import { FileDown, ScissorsSquare, FileDigit, FileText } from 'lucide-react';
 
 const PDFTools: FC = () => {
   const pdfTools = [
@@ -10,19 +10,19 @@ const PDFTools: FC = () => {
       id: 'merge',
       title: 'Merge PDF',
       description: 'Combine multiple PDF files into one document',
-      icon: Merge,
+      icon: FileDown,
     },
     {
       id: 'split',
       title: 'Split PDF',
       description: 'Separate PDF pages into multiple files',
-      icon: Split,
+      icon: ScissorsSquare,
     },
     {
       id: 'compress',
       title: 'Compress PDF',
       description: 'Reduce the file size of your PDF documents',
-      icon: Compress,
+      icon: FileDigit,
     },
     {
       id: 'pdf-to-text',

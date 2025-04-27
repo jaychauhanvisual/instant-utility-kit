@@ -2,7 +2,7 @@
 import { FC } from 'react';
 import CategoryLayout from '@/components/CategoryLayout';
 import ToolCard from '@/components/ToolCard';
-import { Resize, Crop, Compress, BackgroundRemove } from 'lucide-react';
+import { ArrowUpDown, Crop, FileDigit, Eraser } from 'lucide-react';
 
 const ImageTools: FC = () => {
   const imageTools = [
@@ -10,7 +10,7 @@ const ImageTools: FC = () => {
       id: 'resize',
       title: 'Resize Image',
       description: 'Change dimensions of your images',
-      icon: Resize,
+      icon: ArrowUpDown,
     },
     {
       id: 'crop',
@@ -22,13 +22,13 @@ const ImageTools: FC = () => {
       id: 'compress-image',
       title: 'Compress Image',
       description: 'Reduce image file size while preserving quality',
-      icon: Compress,
+      icon: FileDigit,
     },
     {
       id: 'background-remove',
       title: 'Remove Background',
       description: 'Automatically remove image backgrounds',
-      icon: BackgroundRemove,
+      icon: Eraser,
     },
   ];
 

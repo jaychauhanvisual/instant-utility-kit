@@ -1,11 +1,30 @@
+
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ToolCard, { ToolCategory } from '@/components/ToolCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { SearchIcon } from 'lucide-react';
-import * as Icons from 'lucide-react';
+import { 
+  SearchIcon, 
+  FileDown, 
+  ScissorsSquare, 
+  FileDigit, 
+  FileText, 
+  ArrowUpDown, 
+  Crop, 
+  Eraser, 
+  Heart, 
+  Calculator, 
+  CalendarDays, 
+  Percent, 
+  CaseLower, 
+  Text, 
+  QrCode, 
+  Link2, 
+  Palette, 
+  FileJson 
+} from 'lucide-react';
 
 // Define our tool data
 const toolsData = [
@@ -14,28 +33,28 @@ const toolsData = [
     id: 'merge',
     title: 'Merge PDF',
     description: 'Combine multiple PDF files into one document',
-    icon: Icons.Merge,
+    icon: FileDown,
     category: 'pdf' as ToolCategory,
   },
   {
     id: 'split',
     title: 'Split PDF',
     description: 'Separate PDF pages into multiple files',
-    icon: Icons.Split,
+    icon: ScissorsSquare,
     category: 'pdf' as ToolCategory,
   },
   {
     id: 'compress',
     title: 'Compress PDF',
     description: 'Reduce the file size of your PDF documents',
-    icon: Icons.Compress,
+    icon: FileDigit,
     category: 'pdf' as ToolCategory,
   },
   {
     id: 'pdf-to-text',
     title: 'PDF to Text',
     description: 'Extract text content from PDF documents',
-    icon: Icons.FileText,
+    icon: FileText,
     category: 'pdf' as ToolCategory,
     comingSoon: true,
   },
@@ -45,28 +64,28 @@ const toolsData = [
     id: 'resize',
     title: 'Resize Image',
     description: 'Change dimensions of your images',
-    icon: Icons.Resize,
+    icon: ArrowUpDown,
     category: 'image' as ToolCategory,
   },
   {
     id: 'crop',
     title: 'Crop Image',
     description: 'Remove unwanted areas from your images',
-    icon: Icons.Crop,
+    icon: Crop,
     category: 'image' as ToolCategory,
   },
   {
     id: 'compress-image',
     title: 'Compress Image',
     description: 'Reduce image file size while preserving quality',
-    icon: Icons.Compress,
+    icon: FileDigit,
     category: 'image' as ToolCategory,
   },
   {
     id: 'background-remove',
     title: 'Remove Background',
     description: 'Automatically remove image backgrounds',
-    icon: Icons.BackgroundRemove,
+    icon: Eraser,
     category: 'image' as ToolCategory,
   },
   
@@ -75,28 +94,28 @@ const toolsData = [
     id: 'bmi',
     title: 'BMI Calculator',
     description: 'Calculate Body Mass Index',
-    icon: Icons.Bmi,
+    icon: Heart,
     category: 'calculator' as ToolCategory,
   },
   {
     id: 'loan',
     title: 'Loan Calculator',
     description: 'Calculate loan payments and interest',
-    icon: Icons.Loan,
+    icon: Calculator,
     category: 'calculator' as ToolCategory,
   },
   {
     id: 'age',
     title: 'Age Calculator',
     description: 'Calculate exact age from birth date',
-    icon: Icons.Age,
+    icon: CalendarDays,
     category: 'calculator' as ToolCategory,
   },
   {
     id: 'percentage',
     title: 'Percentage Calculator',
     description: 'Calculate percentages easily',
-    icon: Icons.Percentage,
+    icon: Percent,
     category: 'calculator' as ToolCategory,
   },
   
@@ -105,14 +124,14 @@ const toolsData = [
     id: 'case-converter',
     title: 'Case Converter',
     description: 'Convert text between different cases',
-    icon: Icons.CaseLower,
+    icon: CaseLower,
     category: 'text' as ToolCategory,
   },
   {
     id: 'word-counter',
     title: 'Word Counter',
     description: 'Count words, characters and paragraphs',
-    icon: Icons.WordCounter,
+    icon: Text,
     category: 'text' as ToolCategory,
   },
   
@@ -121,14 +140,14 @@ const toolsData = [
     id: 'qr-generator',
     title: 'QR Generator',
     description: 'Generate QR codes for any text or URL',
-    icon: Icons.QrCode,
+    icon: QrCode,
     category: 'other' as ToolCategory,
   },
   {
     id: 'url-shortener',
     title: 'URL Shortener',
     description: 'Create short links from long URLs',
-    icon: Icons.UrlShortener,
+    icon: Link2,
     category: 'other' as ToolCategory,
     comingSoon: true,
   },
@@ -136,14 +155,14 @@ const toolsData = [
     id: 'color-picker',
     title: 'Color Picker',
     description: 'Pick and convert between color formats',
-    icon: Icons.ColorPicker,
+    icon: Palette,
     category: 'other' as ToolCategory,
   },
   {
     id: 'json-formatter',
     title: 'JSON Formatter',
     description: 'Format and validate JSON data',
-    icon: Icons.JsonFormatter,
+    icon: FileJson,
     category: 'other' as ToolCategory,
     comingSoon: true,
   },

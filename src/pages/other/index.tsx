@@ -2,7 +2,7 @@
 import { FC } from 'react';
 import CategoryLayout from '@/components/CategoryLayout';
 import ToolCard from '@/components/ToolCard';
-import { QrCode, UrlShortener, ColorPicker, JsonFormatter } from 'lucide-react';
+import { QrCode, Link2, Palette, FileJson } from 'lucide-react';
 
 const OtherTools: FC = () => {
   const otherTools = [
@@ -16,20 +16,20 @@ const OtherTools: FC = () => {
       id: 'url-shortener',
       title: 'URL Shortener',
       description: 'Create short links from long URLs',
-      icon: UrlShortener,
+      icon: Link2,
       comingSoon: true,
     },
     {
       id: 'color-picker',
       title: 'Color Picker',
       description: 'Pick and convert between color formats',
-      icon: ColorPicker,
+      icon: Palette,
     },
     {
       id: 'json-formatter',
       title: 'JSON Formatter',
       description: 'Format and validate JSON data',
-      icon: JsonFormatter,
+      icon: FileJson,
       comingSoon: true,
     },
   ];

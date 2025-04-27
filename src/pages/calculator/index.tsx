@@ -2,7 +2,7 @@
 import { FC } from 'react';
 import CategoryLayout from '@/components/CategoryLayout';
 import ToolCard from '@/components/ToolCard';
-import { Bmi, Loan, Age, Percentage } from 'lucide-react';
+import { Heart, Calculator, CalendarDays, Percent } from 'lucide-react';
 
 const CalculatorTools: FC = () => {
   const calculatorTools = [
@@ -10,25 +10,29 @@ const CalculatorTools: FC = () => {
       id: 'bmi',
       title: 'BMI Calculator',
       description: 'Calculate Body Mass Index',
-      icon: Bmi,
+      icon: Heart,
+      comingSoon: false,
     },
     {
       id: 'loan',
       title: 'Loan Calculator',
       description: 'Calculate loan payments and interest',
-      icon: Loan,
+      icon: Calculator,
+      comingSoon: false,
     },
     {
       id: 'age',
       title: 'Age Calculator',
       description: 'Calculate exact age from birth date',
-      icon: Age,
+      icon: CalendarDays,
+      comingSoon: false,
     },
     {
       id: 'percentage',
       title: 'Percentage Calculator',
       description: 'Calculate percentages easily',
-      icon: Percentage,
+      icon: Percent,
+      comingSoon: false,
     },
   ];
 

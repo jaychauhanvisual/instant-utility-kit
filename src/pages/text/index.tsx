@@ -2,7 +2,7 @@
 import { FC } from 'react';
 import CategoryLayout from '@/components/CategoryLayout';
 import ToolCard from '@/components/ToolCard';
-import { CaseLower, WordCounter } from 'lucide-react';
+import { CaseLower, Text } from 'lucide-react';
 
 const TextTools: FC = () => {
   const textTools = [
@@ -11,12 +11,14 @@ const TextTools: FC = () => {
       title: 'Case Converter',
       description: 'Convert text between different cases',
       icon: CaseLower,
+      comingSoon: false,
     },
     {
       id: 'word-counter',
       title: 'Word Counter',
       description: 'Count words, characters and paragraphs',
-      icon: WordCounter,
+      icon: Text,
+      comingSoon: false,
     },
   ];
 
