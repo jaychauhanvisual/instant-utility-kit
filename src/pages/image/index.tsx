@@ -11,24 +11,28 @@ const ImageTools: FC = () => {
       title: 'Resize Image',
       description: 'Change dimensions of your images',
       icon: ArrowUpDown,
+      comingSoon: false,
     },
     {
       id: 'crop',
       title: 'Crop Image',
       description: 'Remove unwanted areas from your images',
       icon: Crop,
+      comingSoon: false,
     },
     {
       id: 'compress-image',
       title: 'Compress Image',
       description: 'Reduce image file size while preserving quality',
       icon: FileDigit,
+      comingSoon: false,
     },
     {
       id: 'background-remove',
       title: 'Remove Background',
       description: 'Automatically remove image backgrounds',
       icon: Eraser,
+      comingSoon: false,
     },
   ];
 

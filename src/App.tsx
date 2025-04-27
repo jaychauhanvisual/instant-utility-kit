@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,10 @@ import MergePDF from "./pages/pdf/MergePDF";
 
 // Image Tool Routes
 import ImageTools from "./pages/image";
+import ResizeImage from "./pages/image/ResizeImage";
+import CropImage from "./pages/image/CropImage";
+import CompressImage from "./pages/image/CompressImage";
+import BackgroundRemove from "./pages/image/BackgroundRemove";
 
 // Calculator Tool Routes
 import CalculatorTools from "./pages/calculator";
@@ -41,6 +46,10 @@ const App = () => (
           
           {/* Image Tools */}
           <Route path="/image" element={<ImageTools />} />
+          <Route path="/image/resize" element={<ResizeImage />} />
+          <Route path="/image/crop" element={<CropImage />} />
+          <Route path="/image/compress-image" element={<CompressImage />} />
+          <Route path="/image/background-remove" element={<BackgroundRemove />} />
           
           {/* Calculator Tools */}
           <Route path="/calculator" element={<CalculatorTools />} />
