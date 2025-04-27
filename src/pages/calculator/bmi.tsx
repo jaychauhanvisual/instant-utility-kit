@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Heart, BarChart, Circle, Scale, ArrowRight, Activity } from 'lucide-react';
+import { Heart, BarChart as BarChartIcon, Circle, Scale, ArrowRight, Activity } from 'lucide-react';
 import CategoryLayout from '@/components/CategoryLayout';
 import {
   ChartContainer,
@@ -335,7 +335,7 @@ export default function BMICalculator() {
           </div>
         </div>
         
-        {/* Health outcomes chart */}
+        {/* Health outcomes chart - FIXING THIS SECTION */}
         <div>
           <h3 className="text-sm font-medium mb-3">Health Outcomes by BMI Category</h3>
           <div className="border rounded-lg p-4 bg-card">
