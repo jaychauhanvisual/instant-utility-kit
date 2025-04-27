@@ -1,9 +1,9 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import Explore from "./pages/Explore";
 import NotFound from "./pages/NotFound";
@@ -43,50 +43,52 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy" element={<Privacy />} />
-          
-          {/* PDF Tools */}
-          <Route path="/pdf" element={<PDFTools />} />
-          <Route path="/pdf/merge" element={<MergePDF />} />
-          <Route path="/pdf/split" element={<SplitPDF />} />
-          <Route path="/pdf/compress" element={<CompressPDF />} />
-          
-          {/* Image Tools */}
-          <Route path="/image" element={<ImageTools />} />
-          <Route path="/image/resize" element={<ResizeImage />} />
-          <Route path="/image/crop" element={<CropImage />} />
-          <Route path="/image/compress-image" element={<CompressImage />} />
-          <Route path="/image/background-remove" element={<BackgroundRemove />} />
-          
-          {/* Calculator Tools */}
-          <Route path="/calculator" element={<CalculatorTools />} />
-          <Route path="/calculator/bmi" element={<BMICalculator />} />
-          <Route path="/calculator/loan" element={<LoanCalculator />} />
-          <Route path="/calculator/age" element={<AgeCalculator />} />
-          <Route path="/calculator/percentage" element={<PercentageCalculator />} />
-          
-          {/* Text Tools */}
-          <Route path="/text" element={<TextTools />} />
-          <Route path="/text/case-converter" element={<CaseConverter />} />
-          <Route path="/text/word-counter" element={<WordCounter />} />
-          
-          {/* Other Tools */}
-          <Route path="/other" element={<OtherTools />} />
-          <Route path="/other/color-picker" element={<ColorPicker />} />
-          
-          {/* Catch-all route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <HelmetProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/explore" element={<Explore />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
+            
+            {/* PDF Tools */}
+            <Route path="/pdf" element={<PDFTools />} />
+            <Route path="/pdf/merge" element={<MergePDF />} />
+            <Route path="/pdf/split" element={<SplitPDF />} />
+            <Route path="/pdf/compress" element={<CompressPDF />} />
+            
+            {/* Image Tools */}
+            <Route path="/image" element={<ImageTools />} />
+            <Route path="/image/resize" element={<ResizeImage />} />
+            <Route path="/image/crop" element={<CropImage />} />
+            <Route path="/image/compress-image" element={<CompressImage />} />
+            <Route path="/image/background-remove" element={<BackgroundRemove />} />
+            
+            {/* Calculator Tools */}
+            <Route path="/calculator" element={<CalculatorTools />} />
+            <Route path="/calculator/bmi" element={<BMICalculator />} />
+            <Route path="/calculator/loan" element={<LoanCalculator />} />
+            <Route path="/calculator/age" element={<AgeCalculator />} />
+            <Route path="/calculator/percentage" element={<PercentageCalculator />} />
+            
+            {/* Text Tools */}
+            <Route path="/text" element={<TextTools />} />
+            <Route path="/text/case-converter" element={<CaseConverter />} />
+            <Route path="/text/word-counter" element={<WordCounter />} />
+            
+            {/* Other Tools */}
+            <Route path="/other" element={<OtherTools />} />
+            <Route path="/other/color-picker" element={<ColorPicker />} />
+            
+            {/* Catch-all route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </HelmetProvider>
   </QueryClientProvider>
 );
 

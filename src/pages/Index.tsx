@@ -1,4 +1,3 @@
-
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import HeroSection from '@/components/HeroSection';
@@ -17,6 +16,7 @@ import {
   Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Helmet } from 'react-helmet-async';
 
 // Tool category data with icons and links
 const toolCategories = [
@@ -87,8 +87,38 @@ export default function Index() {
     return () => observer.disconnect();
   }, []);
 
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "InstantUtils",
+    "url": "https://instantutils.jaychauhan.tech",
+    "applicationCategory": "UtilityApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "Free online utilities for everyday tasks. PDF tools, image editors, calculators, text converters, and more.",
+    "operatingSystem": "Any",
+    "screenshot": "https://instantutils.jaychauhan.tech/screenshot.jpg",
+    "softwareVersion": "1.0",
+    "author": {
+      "@type": "Person",
+      "name": "Jay Chauhan"
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>InstantUtils - Free Online Utilities and Tools</title>
+        <meta name="description" content="Free online utilities for everyday tasks. PDF tools, image editors, calculators, text converters, and more. No signup required." />
+        <meta name="keywords" content="online utilities, free tools, pdf tools, image resizer, calculator, text tools" />
+        <link rel="canonical" href="https://instantutils.jaychauhan.tech/" />
+        <script type="application/ld+json">
+          {JSON.stringify(schemaData)}
+        </script>
+      </Helmet>
       <Navbar />
       <main className="flex-1">
         <HeroSection />

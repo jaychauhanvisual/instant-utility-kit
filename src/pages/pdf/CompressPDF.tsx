@@ -28,11 +28,12 @@ import {
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import CompressPDFStructuredData from './CompressPDFStructuredData';
 
 // Define compression quality presets
 const compressionPresets = {
-  low: { quality: 0.5, description: "Heavily compressed, smaller file size, lower quality" },
-  medium: { quality: 0.7, description: "Balanced compression, good quality and file size" },
+  low: { quality: 0.3, description: "Heavily compressed, smaller file size, lower quality" },
+  medium: { quality: 0.6, description: "Balanced compression, good quality and file size" },
   high: { quality: 0.9, description: "Light compression, larger file size, high quality" },
   custom: { quality: 0.8, description: "Custom compression level" }
 };
@@ -97,42 +98,82 @@ const CompressPDF = () => {
       const pdfDoc = await PDFDocument.load(fileArrayBuffer);
       setProgress(50);
 
-      // Apply compression quality
+      // Get compression quality
       const quality = getQualityValue();
+      
+      // Actually create a new PDF with compression
+      const compressedDoc = await PDFDocument.create();
+      
+      // Copy pages from original document
+      const pages = await compressedDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
+      pages.forEach(page => compressedDoc.addPage(page));
+      
+      setProgress(70);
 
-      // Get pages from the PDF
-      const pages = pdfDoc.getPages();
-      setProgress(60);
-
-      // For a real implementation, different quality levels would affect
-      // different PDF optimization parameters. Here we're simulating with
-      // the same save options but in a real implementation, you'd use
-      // different options based on quality.
-      const pdfBytes = await pdfDoc.save({
+      // Apply different compression options based on quality
+      const pdfBytes = await compressedDoc.save({
         useObjectStreams: true,
         addDefaultPage: false,
+        // Lower quality means more compression
+        objectCompressionLevel: Math.floor((1 - quality) * 9) // 0-9 scale
       });
       
-      setProgress(80);
-
-      // Create a scaled file size based on the quality setting to simulate compression
-      // The higher the quality, the larger the file (less compression)
-      const compressionFactor = 1 - (quality * 0.8);
-      const adjustedSize = Math.max(pdfBytes.length * compressionFactor, pdfBytes.length * 0.2);
+      setProgress(85);
       
+      // Create real compressed PDF
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      setCompressedSize(Math.floor(adjustedSize));
+      const actualCompressedSize = blob.size;
+      setCompressedSize(actualCompressedSize);
       
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `compressed_${selectedFile.name}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      // Ensure compression actually happened
+      // If compression didn't help, use more aggressive settings
+      if (actualCompressedSize >= originalSize * 0.95) {
+        // Try again with more aggressive settings
+        const moreCompressedDoc = await PDFDocument.create();
+        const morePages = await moreCompressedDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
+        morePages.forEach(page => moreCompressedDoc.addPage(page));
+        
+        const morePdfBytes = await moreCompressedDoc.save({
+          useObjectStreams: true,
+          addDefaultPage: false,
+          objectCompressionLevel: 9 // Maximum compression
+        });
+        
+        const moreBlob = new Blob([morePdfBytes], { type: 'application/pdf' });
+        const moreCompressedSize = moreBlob.size;
+        
+        // Use the smaller of the two attempts
+        if (moreCompressedSize < actualCompressedSize) {
+          setCompressedSize(moreCompressedSize);
+          
+          const url = URL.createObjectURL(moreBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `compressed_${selectedFile.name}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `compressed_${selectedFile.name}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `compressed_${selectedFile.name}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
       
       setProgress(100);
-      toast.success(`PDF compressed: ${formatFileSize(originalSize)} → ${formatFileSize(adjustedSize)}`);
+      toast.success(`PDF compressed: ${formatFileSize(originalSize)} → ${formatFileSize(compressedSize)}`);
       setTimeout(() => {
         setProgress(0);
         setIsProcessing(false);
@@ -167,231 +208,234 @@ const CompressPDF = () => {
     : 0;
 
   return (
-    <CategoryLayout
-      title="Compress PDF"
-      description="Reduce the file size of your PDF documents"
-      category="pdf"
-      categoryColor="utility-pdf"
-    >
-      <div className="max-w-3xl mx-auto">
-        <div className="grid gap-8">
-          {/* File Upload Area with animation */}
-          <div 
-            className={cn(
-              "border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300",
-              selectedFile ? "border-primary/40 bg-primary/5" : "hover:border-primary/30 hover:bg-primary/5"
-            )}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
-            <div className="flex flex-col items-center gap-4">
-              <div className={cn(
-                "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500",
-                selectedFile ? "bg-primary/20 scale-110" : "bg-utility-pdf/10"
-              )}>
-                <FileDigit className={cn(
-                  "w-8 h-8 transition-all duration-500",
-                  selectedFile ? "text-primary" : "text-utility-pdf"
-                )} />
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-xl font-medium">Upload PDF File</h3>
-                <p className="text-muted-foreground">Drag and drop your PDF here or click to browse</p>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4 items-center mt-4 w-full max-w-md">
-                <Input
-                  type="file"
-                  accept=".pdf"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="cursor-pointer file:cursor-pointer file:transition-colors file:hover:bg-primary/90"
-                  id="file-input"
-                />
-              </div>
-              
-              {selectedFile && (
-                <div className="flex items-center gap-2 text-sm bg-muted p-2 rounded-md animate-fade-in">
-                  <FileDigit className="h-4 w-4" />
-                  <span>{selectedFile.name} ({formatFileSize(originalSize)})</span>
-                </div>
+    <>
+      <CompressPDFStructuredData url="https://instantutils.jaychauhan.tech/pdf/compress" />
+      <CategoryLayout
+        title="Compress PDF"
+        description="Reduce the file size of your PDF documents"
+        category="pdf"
+        categoryColor="utility-pdf"
+      >
+        <div className="max-w-3xl mx-auto">
+          <div className="grid gap-8">
+            {/* File Upload Area with animation */}
+            <div 
+              className={cn(
+                "border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300",
+                selectedFile ? "border-primary/40 bg-primary/5" : "hover:border-primary/30 hover:bg-primary/5"
               )}
-            </div>
-          </div>
-
-          {/* Compression Options */}
-          {selectedFile && (
-            <div className="space-y-6 border rounded-lg p-6 bg-card animate-fade-in">
-              <Tabs defaultValue="basic" onValueChange={(val) => setAdvancedMode(val === 'advanced')}>
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="basic">Basic</TabsTrigger>
-                  <TabsTrigger value="advanced">Advanced</TabsTrigger>
-                </TabsList>
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className={cn(
+                  "w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500",
+                  selectedFile ? "bg-primary/20 scale-110" : "bg-utility-pdf/10"
+                )}>
+                  <FileDigit className={cn(
+                    "w-8 h-8 transition-all duration-500",
+                    selectedFile ? "text-primary" : "text-utility-pdf"
+                  )} />
+                </div>
                 
-                <TabsContent value="basic" className="space-y-4">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Compression Level</h3>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(['low', 'medium', 'high'] as const).map(preset => (
-                        <div 
-                          key={preset}
-                          className={cn(
-                            "border rounded-lg p-4 cursor-pointer transition-all",
-                            compressionPreset === preset ? 
-                              "border-primary bg-primary/5 shadow-sm" : 
-                              "hover:border-primary/30 hover:bg-primary/5"
-                          )}
-                          onClick={() => setCompressionPreset(preset)}
-                        >
-                          <h4 className="font-medium capitalize">{preset}</h4>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {compressionPresets[preset].description}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-medium">Upload PDF File</h3>
+                  <p className="text-muted-foreground">Drag and drop your PDF here or click to browse</p>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-4 items-center mt-4 w-full max-w-md">
+                  <Input
+                    type="file"
+                    accept=".pdf"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="cursor-pointer file:cursor-pointer file:transition-colors file:hover:bg-primary/90"
+                    id="file-input"
+                  />
+                </div>
+                
+                {selectedFile && (
+                  <div className="flex items-center gap-2 text-sm bg-muted p-2 rounded-md animate-fade-in">
+                    <FileDigit className="h-4 w-4" />
+                    <span>{selectedFile.name} ({formatFileSize(originalSize)})</span>
                   </div>
-                </TabsContent>
-                
-                <TabsContent value="advanced" className="space-y-4 animate-fade-in">
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Custom Compression</h3>
-                    <div 
-                      className={cn(
-                        "border rounded-lg p-4 transition-all",
-                        "border-primary bg-primary/5 shadow-sm"
-                      )}
-                    >
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <Label htmlFor="compression-slider">Compression quality: {customQuality}%</Label>
+                )}
+              </div>
+            </div>
+
+            {/* Compression Options */}
+            {selectedFile && (
+              <div className="space-y-6 border rounded-lg p-6 bg-card animate-fade-in">
+                <Tabs defaultValue="basic" onValueChange={(val) => setAdvancedMode(val === 'advanced')}>
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="basic">Basic</TabsTrigger>
+                    <TabsTrigger value="advanced">Advanced</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="basic" className="space-y-4">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Compression Level</h3>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['low', 'medium', 'high'] as const).map(preset => (
+                          <div 
+                            key={preset}
+                            className={cn(
+                              "border rounded-lg p-4 cursor-pointer transition-all",
+                              compressionPreset === preset ? 
+                                "border-primary bg-primary/5 shadow-sm" : 
+                                "hover:border-primary/30 hover:bg-primary/5"
+                            )}
+                            onClick={() => setCompressionPreset(preset)}
+                          >
+                            <h4 className="font-medium capitalize">{preset}</h4>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {compressionPresets[preset].description}
+                            </p>
                           </div>
-                          <Slider
-                            id="compression-slider"
-                            min={10}
-                            max={100}
-                            step={1}
-                            value={[customQuality]}
-                            onValueChange={(values) => {
-                              setCustomQuality(values[0]);
-                              setCompressionPreset('custom');
-                            }}
-                          />
-                          <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                            <span>Small file size</span>
-                            <span>High quality</span>
+                        ))}
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="advanced" className="space-y-4 animate-fade-in">
+                    <div>
+                      <h3 className="text-lg font-medium mb-4">Custom Compression</h3>
+                      <div 
+                        className={cn(
+                          "border rounded-lg p-4 transition-all",
+                          "border-primary bg-primary/5 shadow-sm"
+                        )}
+                      >
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex justify-between items-center mb-2">
+                              <Label htmlFor="compression-slider">Compression quality: {customQuality}%</Label>
+                            </div>
+                            <Slider
+                              id="compression-slider"
+                              min={10}
+                              max={100}
+                              step={1}
+                              value={[customQuality]}
+                              onValueChange={(values) => {
+                                setCustomQuality(values[0]);
+                                setCompressionPreset('custom');
+                              }}
+                            />
+                            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                              <span>Small file size</span>
+                              <span>High quality</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-              
-              {/* Process Button */}
-              <div className="flex justify-end">
-                <Button 
-                  onClick={handleCompress}
-                  disabled={isProcessing}
-                  className={cn(
-                    "flex gap-2 transition-all",
-                    isProcessing ? "" : "hover:scale-105"
-                  )}
-                  size="lg"
-                >
-                  {isProcessing ? (
-                    <>
-                      <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <FileOutput className="h-4 w-4" />
-                      Compress PDF
-                    </>
-                  )}
-                </Button>
-              </div>
-              
-              {/* Progress Bar */}
-              {isProcessing && (
-                <div className="space-y-2 animate-fade-in">
-                  <div className="text-sm flex justify-between">
-                    <span>Processing...</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
+                  </TabsContent>
+                </Tabs>
+                
+                {/* Process Button */}
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={handleCompress}
+                    disabled={isProcessing}
+                    className={cn(
+                      "flex gap-2 transition-all",
+                      isProcessing ? "" : "hover:scale-105"
+                    )}
+                    size="lg"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <FileOutput className="h-4 w-4" />
+                        Compress PDF
+                      </>
+                    )}
+                  </Button>
                 </div>
-              )}
+                
+                {/* Progress Bar */}
+                {isProcessing && (
+                  <div className="space-y-2 animate-fade-in">
+                    <div className="text-sm flex justify-between">
+                      <span>Processing...</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <Progress value={progress} className="h-2" />
+                  </div>
+                )}
 
-              {/* Compression Results */}
-              {compressedSize > 0 && !isProcessing && (
-                <div className="bg-muted/50 p-4 rounded-md space-y-2 animate-fade-in">
-                  <h4 className="font-medium">Compression Results</h4>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Original Size</p>
-                      <p className="font-medium">{formatFileSize(originalSize)}</p>
+                {/* Compression Results */}
+                {compressedSize > 0 && !isProcessing && (
+                  <div className="bg-muted/50 p-4 rounded-md space-y-2 animate-fade-in">
+                    <h4 className="font-medium">Compression Results</h4>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Original Size</p>
+                        <p className="font-medium">{formatFileSize(originalSize)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Compressed Size</p>
+                        <p className="font-medium">{formatFileSize(compressedSize)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Reduction</p>
+                        <p className="font-medium text-green-600">{compressionPercentage}%</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-muted-foreground">Compressed Size</p>
-                      <p className="font-medium">{formatFileSize(compressedSize)}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Reduction</p>
-                      <p className="font-medium text-green-600">{compressionPercentage}%</p>
+                    
+                    <div className="mt-2">
+                      <Progress value={compressionPercentage} className="h-2" />
                     </div>
                   </div>
-                  
-                  <div className="mt-2">
-                    <Progress value={compressionPercentage} className="h-2" />
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
+            )}
+            
+            {/* Instructions and FAQ */}
+            <div className="bg-muted/50 rounded-lg p-6 space-y-4">
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="about">
+                  <AccordionTrigger>About PDF Compression</AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-sm text-muted-foreground">
+                      This tool reduces PDF file size by optimizing the document structure and compressing content.
+                      Compression works best on PDFs with high-resolution images or complex graphics.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="benefits">
+                  <AccordionTrigger>Benefits of PDF Compression</AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                      <li>Faster email sending and uploading</li>
+                      <li>Reduced storage space requirements</li>
+                      <li>Improved loading times on websites</li>
+                      <li>Easier sharing through messaging apps</li>
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="privacy">
+                  <AccordionTrigger>Privacy & Security</AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-sm text-muted-foreground">
+                      This tool processes your PDF locally in your browser. No files are uploaded to any server,
+                      ensuring complete privacy and security for your documents.
+                    </p>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
-          )}
-          
-          {/* Instructions and FAQ */}
-          <div className="bg-muted/50 rounded-lg p-6 space-y-4">
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="about">
-                <AccordionTrigger>About PDF Compression</AccordionTrigger>
-                <AccordionContent>
-                  <p className="text-sm text-muted-foreground">
-                    This tool reduces PDF file size by optimizing the document structure and compressing content.
-                    Compression works best on PDFs with high-resolution images or complex graphics.
-                  </p>
-                </AccordionContent>
-              </AccordionItem>
-              
-              <AccordionItem value="benefits">
-                <AccordionTrigger>Benefits of PDF Compression</AccordionTrigger>
-                <AccordionContent>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                    <li>Faster email sending and uploading</li>
-                    <li>Reduced storage space requirements</li>
-                    <li>Improved loading times on websites</li>
-                    <li>Easier sharing through messaging apps</li>
-                  </ul>
-                </AccordionContent>
-              </AccordionItem>
-              
-              <AccordionItem value="privacy">
-                <AccordionTrigger>Privacy & Security</AccordionTrigger>
-                <AccordionContent>
-                  <p className="text-sm text-muted-foreground">
-                    This tool processes your PDF locally in your browser. No files are uploaded to any server,
-                    ensuring complete privacy and security for your documents.
-                  </p>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
           </div>
         </div>
-      </div>
-    </CategoryLayout>
+      </CategoryLayout>
+    </>
   );
 };
 

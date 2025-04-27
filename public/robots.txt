@@ -1,14 +1,24 @@
+
+# Allow all web crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://instantutils.jaychauhan.tech/sitemap.xml
+
+# Specific rules for major bots
 User-agent: Googlebot
 Allow: /
 
 User-agent: Bingbot
 Allow: /
 
-User-agent: Twitterbot
+User-agent: Slurp
 Allow: /
 
-User-agent: facebookexternalhit
+User-agent: DuckDuckBot
 Allow: /
 
-User-agent: *
-Allow: /
+# Disallow duplicate paths or admin areas if needed
+# Disallow: /admin/
+# Disallow: /duplicate-content/
