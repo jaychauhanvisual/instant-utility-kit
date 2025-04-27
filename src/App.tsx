@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Explore from "./pages/Explore";
 import NotFound from "./pages/NotFound";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 
 // PDF Tool Routes
 import PDFTools from "./pages/pdf";
@@ -48,6 +50,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
           
           {/* PDF Tools */}
           <Route path="/pdf" element={<PDFTools />} />
