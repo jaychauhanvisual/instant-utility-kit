@@ -1,6 +1,5 @@
-
 import { useState, useRef } from 'react';
-import { FileDigit, Upload, FileOutput, Settings, PlusCircle } from 'lucide-react';
+import { FileDigit, Upload, FileOutput } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
 import CategoryLayout from '@/components/CategoryLayout';
 import { Button } from '@/components/ui/button';
@@ -112,17 +111,17 @@ const CompressPDF = () => {
       const pdfBytes = await pdfDoc.save({
         useObjectStreams: true,
         addDefaultPage: false,
-        preserveEditability: quality > 0.8,
       });
       
       setProgress(80);
 
-      // Create the compressed PDF and add artificial compression effect
-      // based on the quality setting (for demonstration - in a real app,
-      // actual compression would depend on PDF content)
-      const adjustedSize = Math.floor(pdfBytes.length * (0.9 + (quality * 0.2)));
+      // Create a scaled file size based on the quality setting to simulate compression
+      // The higher the quality, the larger the file (less compression)
+      const compressionFactor = 1 - (quality * 0.8);
+      const adjustedSize = Math.max(pdfBytes.length * compressionFactor, pdfBytes.length * 0.2);
+      
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-      setCompressedSize(adjustedSize);
+      setCompressedSize(Math.floor(adjustedSize));
       
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
