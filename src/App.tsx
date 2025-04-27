@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,6 +27,8 @@ import PercentageCalculator from "./pages/calculator/percentage";
 
 // Text Tool Routes
 import TextTools from "./pages/text";
+import CaseConverter from "./pages/text/case-converter";
+import WordCounter from "./pages/text/word-counter";
 
 // Other Tool Routes
 import OtherTools from "./pages/other";
@@ -64,6 +65,8 @@ const App = () => (
           
           {/* Text Tools */}
           <Route path="/text" element={<TextTools />} />
+          <Route path="/text/case-converter" element={<CaseConverter />} />
+          <Route path="/text/word-counter" element={<WordCounter />} />
           
           {/* Other Tools */}
           <Route path="/other" element={<OtherTools />} />
