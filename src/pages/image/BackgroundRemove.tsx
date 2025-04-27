@@ -1,9 +1,8 @@
-
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Eraser, UploadCloud, Download } from 'lucide-react';
+import { Eraser, UploadCloud, Download, Layers3 } from 'lucide-react';
 import CategoryLayout from '@/components/CategoryLayout';
 
 export default function BackgroundRemove() {
@@ -12,7 +11,6 @@ export default function BackgroundRemove() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,22 +58,22 @@ export default function BackgroundRemove() {
 
     setIsProcessing(true);
     
-    // Create a canvas to process the image
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    if (!ctx) {
-      setIsProcessing(false);
-      toast({
-        title: "Processing error",
-        description: "Failed to create canvas context.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     const img = new Image();
     img.onload = () => {
+      // Create a canvas to process the image
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        setIsProcessing(false);
+        toast({
+          title: "Processing error",
+          description: "Failed to create canvas context.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Set canvas dimensions to image dimensions
       canvas.width = img.width;
       canvas.height = img.height;
@@ -87,20 +85,68 @@ export default function BackgroundRemove() {
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
       
-      // Simple background removal using color threshold
-      // This is a very basic approach that removes white/light backgrounds
-      const threshold = 240; // Adjust this threshold as needed
-      
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
+      // Enhanced background removal using color thresholds and edge detection
+      const removeBackground = () => {
+        // Detect edges (simplified Sobel operator)
+        const edgeMap = new Uint8Array(data.length / 4);
+        const threshold = 30; // Edge detection threshold
         
-        // If the pixel is close to white, make it transparent
-        if (r > threshold && g > threshold && b > threshold) {
-          data[i + 3] = 0; // Set alpha to 0
+        for (let y = 1; y < canvas.height - 1; y++) {
+          for (let x = 1; x < canvas.width - 1; x++) {
+            const idx = (y * canvas.width + x) * 4;
+            
+            // Calculate gradient (simplified)
+            const gx = 
+              -data[idx - 4] + data[idx + 4]
+              -2 * data[idx - 4 + canvas.width * 4] + 2 * data[idx + 4 + canvas.width * 4]
+              -data[idx - 4 + 2 * canvas.width * 4] + data[idx + 4 + 2 * canvas.width * 4];
+            
+            const gy = 
+              -data[idx - canvas.width * 4] + data[idx + canvas.width * 4]
+              -2 * data[idx - canvas.width * 4 + 4] + 2 * data[idx + canvas.width * 4 + 4]
+              -data[idx - canvas.width * 4 + 8] + data[idx + canvas.width * 4 + 8];
+            
+            const magnitude = Math.sqrt(gx * gx + gy * gy);
+            edgeMap[y * canvas.width + x] = magnitude > threshold ? 255 : 0;
+          }
         }
-      }
+        
+        // Enhanced background detection
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          
+          // Pixel position
+          const x = (i / 4) % canvas.width;
+          const y = Math.floor((i / 4) / canvas.width);
+          const pixelIdx = y * canvas.width + x;
+          
+          // Check if pixel is likely background
+          const brightness = (r + g + b) / 3;
+          const colorVariance = Math.max(Math.abs(r - g), Math.abs(r - b), Math.abs(g - b));
+          const isEdge = (pixelIdx < edgeMap.length) ? (edgeMap[pixelIdx] > 0) : false;
+          
+          // Background removal logic (higher threshold at edges)
+          let isBackground = false;
+          
+          if (isEdge) {
+            // Keep edges more carefully
+            isBackground = brightness > 240 && colorVariance < 15;
+          } else {
+            // More aggressive for non-edge areas
+            isBackground = (brightness > 220 && colorVariance < 20) || 
+                         (r > 200 && g > 200 && b > 200);
+          }
+          
+          if (isBackground) {
+            data[i + 3] = 0; // Set alpha to 0 for background
+          }
+        }
+      };
+      
+      // Execute background removal
+      removeBackground();
       
       // Put the processed image data back onto the canvas
       ctx.putImageData(imageData, 0, 0);
@@ -226,12 +272,23 @@ export default function BackgroundRemove() {
             {resultUrl && (
               <div>
                 <h2 className="text-lg font-medium mb-4">3. Result</h2>
-                <div className="border rounded-md p-2 flex justify-center bg-gray-100 dark:bg-gray-700 mb-4" style={{ backgroundImage: 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMC8yOS8xMiKqq3kAAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzVxteM2AAABHklEQVQ4jZWTvU4CQRSFv3vZXdgFYimQbLRAwcZIQWHpK1hZ0FnzBLyAsZWSx9DSwhojhZa2JNRKwuIPERZw77Uwe4GohF3CSW7m3HPOzczcMSKCiKCUyrVWqwFQKpVwHIeXlxeiKEopYpTyff/bDev1OhcXF5imiRCCcrnM/v4+t7e3pGkKYK21FvEVrNVqDAYD0jTFdV2azSZHR0cYhnGcJImV+1yr1Xh7e2N3d5fLy0t6vR71ep35fE673WYymWTr5O851Go1Xl9fOT8/ZzqdEgQBjuMwnU5xXZdisUi32003YRgmgMzn8zSbzSQIgqxUKkkYhtn9/X1mWZZ4npfvQEQy3/cZjUYsFgvCMKTdbmNZFnt7ew/j8bgDIPwCDUjWNL9eJJUAAAAASUVORK5CYII=")', backgroundRepeat: 'repeat' }}>
-                  <img 
-                    src={resultUrl} 
-                    alt="Processed" 
-                    className="max-h-64 object-contain"
-                  />
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                  <div className="flex-1 border rounded-md p-2 bg-gray-100 dark:bg-gray-700">
+                    <h3 className="text-sm font-medium mb-2 text-center">Original</h3>
+                    <img 
+                      src={preview as string} 
+                      alt="Original" 
+                      className="max-h-48 object-contain mx-auto"
+                    />
+                  </div>
+                  <div className="flex-1 border rounded-md p-2" style={{ backgroundImage: 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMC8yOS8xMiKqq3kAAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzVxteM2AAABHklEQVQ4jZWTvU4CQRSFv3vZXdgFYimQbLRAwcZIQWHpK1hZ0FnzBLyAsZWSx9DSwhojhZa2JNRKwuIPERZw77Uwe4GohF3CSW7m3HPOzczcMSKCiKCUyrVWqwFQKpVwHIeXlxeiKEopYpTyff/bDev1OhcXF5imiRCCcrnM/v4+t7e3pGkKYK21FvEVrNVqDAYD0jTFdV2azSZHR0cYhnGcJImV+1yr1Xh7e2N3d5fLy0t6vR71ep35fE673WYymWTr5O851Go1Xl9fOT8/ZzqdEgQBjuMwnU5xXZdisUi32003YRgmgMzn8zSbzSQIgqxUKkkYhtn9/X1mWZZ4npfvQEQy3/cZjUYsFgvCMKTdbmNZFnt7ew/j8bgDIPwCDUjWNL9eJJUAAAAASUVORK5CYII=")', backgroundRepeat: 'repeat' }}>
+                    <h3 className="text-sm font-medium mb-2 text-center">Background Removed</h3>
+                    <img 
+                      src={resultUrl} 
+                      alt="Processed" 
+                      className="max-h-48 object-contain mx-auto"
+                    />
+                  </div>
                 </div>
                 <Button 
                   onClick={handleDownload}

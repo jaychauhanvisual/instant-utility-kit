@@ -5,8 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Heart } from 'lucide-react';
+import { Heart, BarChart } from 'lucide-react';
 import CategoryLayout from '@/components/CategoryLayout';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent
+} from "@/components/ui/chart";
+import { Bar, BarChart as RechartBarChart, Cell, XAxis, YAxis } from "recharts";
 
 export default function BMICalculator() {
   const [weight, setWeight] = useState<number | ''>('');
@@ -63,6 +69,87 @@ export default function BMICalculator() {
     setHeight('');
     setBmi(null);
     setCategory(null);
+  };
+
+  // BMI range data for visualization
+  const bmiData = [
+    { name: "Underweight", range: "< 18.5", value: 18.5, color: "#3b82f6" }, // blue
+    { name: "Normal", range: "18.5 - 24.9", value: 6.5, color: "#22c55e" }, // green
+    { name: "Overweight", range: "25 - 29.9", value: 5, color: "#f97316" }, // orange
+    { name: "Obese", range: "≥ 30", value: 10, color: "#ef4444" }, // red
+  ];
+
+  // Get color for user's BMI
+  const getBmiColor = () => {
+    if (!bmi) return "#94a3b8"; // Default gray
+    
+    if (bmi < 18.5) return "#3b82f6"; // Underweight: blue
+    if (bmi < 25) return "#22c55e"; // Normal: green
+    if (bmi < 30) return "#f97316"; // Overweight: orange
+    return "#ef4444"; // Obese: red
+  };
+
+  // User's BMI marker position
+  const calculateMarkerPosition = () => {
+    if (!bmi) return "0%";
+    
+    // Calculate position on scale from 10 to 40 BMI
+    const minScale = 10;
+    const maxScale = 40;
+    const percentage = ((Math.min(Math.max(bmi, minScale), maxScale) - minScale) / (maxScale - minScale)) * 100;
+    return `${percentage}%`;
+  };
+
+  const renderBmiComparison = () => {
+    if (!bmi) return null;
+
+    // Example comparative data (simplified)
+    const comparisonData = [
+      { range: "Your BMI", value: bmi, color: getBmiColor() },
+      { range: "Healthy Range", value: 22, color: "#22c55e" }, // Green
+      { range: "Average Adult", value: 26.5, color: "#94a3b8" }, // Gray
+    ];
+
+    return (
+      <div className="mt-6">
+        <h3 className="text-sm font-medium mb-3">How does your BMI compare?</h3>
+        <ChartContainer 
+          config={{
+            yourBmi: { theme: { light: getBmiColor(), dark: getBmiColor() } },
+            healthy: { theme: { light: "#22c55e", dark: "#22c55e" } },
+            average: { theme: { light: "#94a3b8", dark: "#94a3b8" } },
+          }}
+          className="h-40"
+        >
+          <RechartBarChart 
+            data={comparisonData}
+            layout="vertical" 
+            barCategoryGap={10}
+          >
+            <XAxis type="number" domain={[0, 40]} hide />
+            <YAxis 
+              type="category" 
+              dataKey="range" 
+              width={80}
+              axisLine={false}
+              tickLine={false}
+            />
+            <ChartTooltip
+              content={<ChartTooltipContent />}
+            />
+            <Bar 
+              dataKey="value" 
+              barSize={24} 
+              radius={4}
+            >
+              {comparisonData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Bar>
+          </RechartBarChart>
+        </ChartContainer>
+      </div>
+    );
   };
 
   return (
@@ -179,6 +266,39 @@ export default function BMICalculator() {
                     {category}
                   </span>
                 </div>
+                
+                {/* BMI Scale Visualization */}
+                <div className="mt-4">
+                  <div className="h-6 flex rounded-full overflow-hidden">
+                    {bmiData.map((item, i) => (
+                      <div 
+                        key={i}
+                        className="h-full flex items-center justify-center text-xs text-white font-medium"
+                        style={{ 
+                          backgroundColor: item.color,
+                          width: `${(item.value / 40) * 100}%`,
+                        }}
+                      >
+                        {item.name}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* BMI Marker */}
+                  <div className="relative h-6 mt-2">
+                    <div className="absolute h-full w-[2px] bg-black dark:bg-white" style={{ left: calculateMarkerPosition() }}></div>
+                    <div 
+                      className="absolute -top-1 transform -translate-x-1/2 h-4 w-4 rounded-full border-2 border-black dark:border-white" 
+                      style={{ left: calculateMarkerPosition(), backgroundColor: getBmiColor() }}
+                    ></div>
+                    <div className="absolute top-4 transform -translate-x-1/2 text-xs font-medium" style={{ left: calculateMarkerPosition() }}>
+                      Your BMI: {bmi}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* BMI Comparison Chart */}
+                {renderBmiComparison()}
               </div>
             )}
           </div>
@@ -198,6 +318,43 @@ export default function BMICalculator() {
             <li>25.0 - 29.9: Overweight</li>
             <li>30.0 and above: Obesity</li>
           </ul>
+          
+          {/* BMI Range Chart */}
+          <div className="mt-4">
+            <h4 className="font-medium mb-2 text-sm flex items-center gap-2">
+              <BarChart className="h-4 w-4" />
+              BMI Distribution
+            </h4>
+            <ChartContainer 
+              config={{
+                underweight: { theme: { light: "#3b82f6", dark: "#3b82f6" } },
+                normal: { theme: { light: "#22c55e", dark: "#22c55e" } },
+                overweight: { theme: { light: "#f97316", dark: "#f97316" } },
+                obese: { theme: { light: "#ef4444", dark: "#ef4444" } },
+              }}
+              className="h-36"
+            >
+              <RechartBarChart 
+                data={bmiData}
+                barCategoryGap={4}
+              >
+                <XAxis dataKey="range" axisLine={false} tickLine={false} />
+                <YAxis hide />
+                <ChartTooltip
+                  content={<ChartTooltipContent />}
+                />
+                <Bar 
+                  dataKey="value" 
+                  barSize={40} 
+                  radius={[4, 4, 0, 0]}
+                >
+                  {bmiData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </RechartBarChart>
+            </ChartContainer>
+          </div>
         </div>
       </div>
     </CategoryLayout>

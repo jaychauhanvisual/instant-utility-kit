@@ -5,11 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Merge, Trash, Download, Plus } from 'lucide-react';
 import CategoryLayout from '@/components/CategoryLayout';
+import { Progress } from '@/components/ui/progress';
 
 export default function MergePDF() {
   const [files, setFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -46,7 +48,7 @@ export default function MergePDF() {
     });
   };
 
-  const handleMerge = () => {
+  const handleMerge = async () => {
     if (files.length < 2) {
       toast({
         title: "More files needed",
@@ -57,20 +59,49 @@ export default function MergePDF() {
     }
 
     setIsProcessing(true);
+    setProgress(0);
     
-    // Simulate processing with timeout
-    setTimeout(() => {
-      setIsProcessing(false);
+    // Simulate progress with intervals
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        const newProgress = prev + Math.random() * 15;
+        return newProgress >= 95 ? 95 : newProgress;
+      });
+    }, 500);
+    
+    try {
+      // In a real app, this is where you would use a PDF library to merge the files
+      // For this demo, we'll simulate processing
       
-      // In a real implementation, this would be where you'd call a PDF merge service
-      // For this demo, we're just simulating success
-      setResultUrl("dummy-merged-file.pdf");
+      // Simulate processing delay
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Create a dummy blob to represent the merged PDF
+      // In a real implementation, this would be the result from a PDF merge library
+      const dummyContent = new Blob(['PDF content would be here'], { type: 'application/pdf' });
+      
+      // Create a URL for the dummy blob
+      const url = URL.createObjectURL(dummyContent);
+      setResultUrl(url);
+      
+      setProgress(100);
+      clearInterval(progressInterval);
       
       toast({
         title: "Merge successful!",
         description: "Your PDFs have been merged successfully.",
       });
-    }, 2000);
+    } catch (error) {
+      toast({
+        title: "Merge failed",
+        description: "An error occurred while merging your PDFs.",
+        variant: "destructive",
+      });
+    } finally {
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 500); // Small delay to show 100% completion
+    }
   };
 
   const handleAddMoreClick = () => {
@@ -80,11 +111,68 @@ export default function MergePDF() {
   };
 
   const handleDownload = () => {
-    // In a real implementation, this would download the merged PDF
+    if (!resultUrl) {
+      toast({
+        title: "No merged PDF",
+        description: "Please merge PDF files first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create a merged filename based on the first few files
+    const baseNames = files.slice(0, 2).map(file => file.name.replace('.pdf', ''));
+    const fileName = `${baseNames.join('-')}-merged.pdf`;
+    
+    // Create an anchor and trigger download
+    const link = document.createElement('a');
+    link.href = resultUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
     toast({
-      title: "Feature coming soon",
-      description: "Download functionality will be available in the next update.",
+      title: "Download started",
+      description: "Your merged PDF is being downloaded.",
     });
+  };
+
+  // Visual indication of PDF stacking
+  const renderPdfStack = () => {
+    if (files.length === 0) return null;
+    
+    return (
+      <div className="mb-6">
+        <h3 className="text-sm font-medium mb-3">PDF Files to Merge</h3>
+        <div className="relative h-32 w-full border rounded-md bg-gray-50 dark:bg-gray-800 overflow-hidden">
+          {files.map((file, index) => {
+            // Calculate staggered position for visual effect
+            const offsetX = 10 + (index * 5);
+            const offsetY = 10 + (index * 5);
+            const zIndex = files.length - index;
+            
+            return (
+              <div 
+                key={index}
+                className="absolute border shadow-sm rounded bg-white dark:bg-gray-700 p-2 flex items-center"
+                style={{
+                  left: `${offsetX}px`,
+                  top: `${offsetY}px`,
+                  zIndex,
+                  maxWidth: 'calc(100% - 40px)'
+                }}
+              >
+                <div className="w-8 h-10 bg-utility-pdf rounded flex items-center justify-center text-white text-xs font-bold mr-2">
+                  PDF
+                </div>
+                <span className="truncate text-sm">{file.name}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -118,6 +206,9 @@ export default function MergePDF() {
                     <Plus className="mr-2 h-4 w-4" /> Add PDF files
                   </Button>
                 </div>
+                
+                {/* Visual PDF stack */}
+                {files.length > 0 && renderPdfStack()}
                 
                 {/* File list */}
                 {files.length > 0 && (
@@ -162,12 +253,28 @@ export default function MergePDF() {
                   </>
                 )}
               </Button>
+              
+              {/* Progress bar */}
+              {isProcessing && (
+                <div className="mt-4">
+                  <Progress value={progress} className="h-2" />
+                  <div className="flex justify-between mt-1">
+                    <span className="text-xs text-muted-foreground">Processing...</span>
+                    <span className="text-xs font-medium">{Math.round(progress)}%</span>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Step 3: Download result (shown only when a result is available) */}
             {resultUrl && (
               <div>
                 <h2 className="text-lg font-medium mb-4">3. Download merged PDF</h2>
+                <div className="p-4 bg-muted rounded-md mb-4 flex items-center justify-center">
+                  <div className="w-16 h-20 bg-utility-pdf rounded-md flex items-center justify-center text-white">
+                    <Download className="h-6 w-6" />
+                  </div>
+                </div>
                 <Button 
                   onClick={handleDownload}
                   className="w-full bg-utility-pdf hover:bg-utility-pdf/90"
