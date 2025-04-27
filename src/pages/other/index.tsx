@@ -11,6 +11,7 @@ const OtherTools: FC = () => {
       title: 'QR Generator',
       description: 'Generate QR codes for any text or URL',
       icon: QrCode,
+      comingSoon: true,
     },
     {
       id: 'url-shortener',
