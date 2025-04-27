@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -84,69 +85,89 @@ export default function BackgroundRemove() {
       // Get the image data
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
-      
-      // Enhanced background removal using color thresholds and edge detection
-      const removeBackground = () => {
-        // Detect edges (simplified Sobel operator)
-        const edgeMap = new Uint8Array(data.length / 4);
-        const threshold = 30; // Edge detection threshold
+
+      // Function to check if a color is likely to be background
+      const isLikelyBackground = (r: number, g: number, b: number) => {
+        const brightness = (r + g + b) / 3;
+        const colorVariance = Math.max(Math.abs(r - g), Math.abs(r - b), Math.abs(g - b));
         
-        for (let y = 1; y < canvas.height - 1; y++) {
-          for (let x = 1; x < canvas.width - 1; x++) {
-            const idx = (y * canvas.width + x) * 4;
-            
-            // Calculate gradient (simplified)
-            const gx = 
-              -data[idx - 4] + data[idx + 4]
-              -2 * data[idx - 4 + canvas.width * 4] + 2 * data[idx + 4 + canvas.width * 4]
-              -data[idx - 4 + 2 * canvas.width * 4] + data[idx + 4 + 2 * canvas.width * 4];
-            
-            const gy = 
-              -data[idx - canvas.width * 4] + data[idx + canvas.width * 4]
-              -2 * data[idx - canvas.width * 4 + 4] + 2 * data[idx + canvas.width * 4 + 4]
-              -data[idx - canvas.width * 4 + 8] + data[idx + canvas.width * 4 + 8];
-            
-            const magnitude = Math.sqrt(gx * gx + gy * gy);
-            edgeMap[y * canvas.width + x] = magnitude > threshold ? 255 : 0;
-          }
+        // Light backgrounds
+        if (brightness > 200 && colorVariance < 20) {
+          return true;
         }
         
-        // Enhanced background detection
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i];
-          const g = data[i + 1];
-          const b = data[i + 2];
-          
-          // Pixel position
-          const x = (i / 4) % canvas.width;
-          const y = Math.floor((i / 4) / canvas.width);
-          const pixelIdx = y * canvas.width + x;
-          
-          // Check if pixel is likely background
-          const brightness = (r + g + b) / 3;
-          const colorVariance = Math.max(Math.abs(r - g), Math.abs(r - b), Math.abs(g - b));
-          const isEdge = (pixelIdx < edgeMap.length) ? (edgeMap[pixelIdx] > 0) : false;
-          
-          // Background removal logic (higher threshold at edges)
-          let isBackground = false;
-          
-          if (isEdge) {
-            // Keep edges more carefully
-            isBackground = brightness > 240 && colorVariance < 15;
-          } else {
-            // More aggressive for non-edge areas
-            isBackground = (brightness > 220 && colorVariance < 20) || 
-                         (r > 200 && g > 200 && b > 200);
-          }
-          
-          if (isBackground) {
-            data[i + 3] = 0; // Set alpha to 0 for background
-          }
+        // Blue/green screens
+        if (g > 100 && b > 100 && r < g && r < b) {
+          return true;
         }
+        
+        // Gray backgrounds
+        if (Math.abs(r - g) < 10 && Math.abs(r - b) < 10 && Math.abs(g - b) < 10 && brightness > 150) {
+          return true;
+        }
+        
+        return false;
       };
       
-      // Execute background removal
-      removeBackground();
+      // Edge detection for better background removal
+      const sobelData = new Uint8Array(data.length / 4);
+      const threshold = 30;
+
+      // Apply Sobel operator for edge detection
+      for (let y = 1; y < canvas.height - 1; y++) {
+        for (let x = 1; x < canvas.width - 1; x++) {
+          const idx = (y * canvas.width + x) * 4;
+          
+          // Calculate gradient using the luminance value
+          const getGray = (idx: number) => {
+            return 0.3 * data[idx] + 0.59 * data[idx + 1] + 0.11 * data[idx + 2];
+          };
+          
+          // Calculate gradients in x and y directions
+          const gx = 
+            getGray((y - 1) * canvas.width * 4 + (x - 1) * 4) * -1 +
+            getGray((y - 1) * canvas.width * 4 + (x + 1) * 4) * 1 +
+            getGray((y) * canvas.width * 4 + (x - 1) * 4) * -2 +
+            getGray((y) * canvas.width * 4 + (x + 1) * 4) * 2 +
+            getGray((y + 1) * canvas.width * 4 + (x - 1) * 4) * -1 +
+            getGray((y + 1) * canvas.width * 4 + (x + 1) * 4) * 1;
+            
+          const gy = 
+            getGray((y - 1) * canvas.width * 4 + (x - 1) * 4) * -1 +
+            getGray((y - 1) * canvas.width * 4 + (x) * 4) * -2 +
+            getGray((y - 1) * canvas.width * 4 + (x + 1) * 4) * -1 +
+            getGray((y + 1) * canvas.width * 4 + (x - 1) * 4) * 1 +
+            getGray((y + 1) * canvas.width * 4 + (x) * 4) * 2 +
+            getGray((y + 1) * canvas.width * 4 + (x + 1) * 4) * 1;
+            
+          const magnitude = Math.sqrt(gx * gx + gy * gy);
+          sobelData[y * canvas.width + x] = magnitude > threshold ? 255 : 0;
+        }
+      }
+      
+      // Background removal with edge preservation
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        
+        // Calculate pixel position
+        const x = (i / 4) % canvas.width;
+        const y = Math.floor((i / 4) / canvas.width);
+        
+        // Edge detection to preserve subject edges
+        const isEdge = sobelData[y * canvas.width + x] > 0;
+        
+        // Determine if pixel is background
+        if (isEdge) {
+          // Preserve edges but still process obvious background
+          if (isLikelyBackground(r, g, b)) {
+            data[i + 3] = 0; // Make transparent
+          }
+        } else if (isLikelyBackground(r, g, b)) {
+          data[i + 3] = 0; // Make transparent
+        }
+      }
       
       // Put the processed image data back onto the canvas
       ctx.putImageData(imageData, 0, 0);
@@ -281,7 +302,10 @@ export default function BackgroundRemove() {
                       className="max-h-48 object-contain mx-auto"
                     />
                   </div>
-                  <div className="flex-1 border rounded-md p-2" style={{ backgroundImage: 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMC8yOS8xMiKqq3kAAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzVxteM2AAABHklEQVQ4jZWTvU4CQRSFv3vZXdgFYimQbLRAwcZIQWHpK1hZ0FnzBLyAsZWSx9DSwhojhZa2JNRKwuIPERZw77Uwe4GohF3CSW7m3HPOzczcMSKCiKCUyrVWqwFQKpVwHIeXlxeiKEopYpTyff/bDev1OhcXF5imiRCCcrnM/v4+t7e3pGkKYK21FvEVrNVqDAYD0jTFdV2azSZHR0cYhnGcJImV+1yr1Xh7e2N3d5fLy0t6vR71ep35fE673WYymWTr5O851Go1Xl9fOT8/ZzqdEgQBjuMwnU5xXZdisUi32003YRgmgMzn8zSbzSQIgqxUKkkYhtn9/X1mWZZ4npfvQEQy3/cZjUYsFgvCMKTdbmNZFnt7ew/j8bgDIPwCDUjWNL9eJJUAAAAASUVORK5CYII=")', backgroundRepeat: 'repeat' }}>
+                  <div className="flex-1 border rounded-md p-2" style={{ 
+                    backgroundImage: 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMC8yOS8xMiKqq3kAAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzVxteM2AAABHklEQVQ4jZWTvU4CQRSFv3vZXdgFYimQbLRAwcZIQWHpK1hZ0FnzBLyAsZWSx9DSwhojhZa2JNRKwuIPERZw77Uwe4GohF3CSW7m3HPOzczcMSKCiKCUyrVWqwFQKpVwHIeXlxeiKEopYpTyff/bDev1OhcXF5imiRCCcrnM/v4+t7e3pGkKYK21FvEVrNVqDAYD0jTFdV2azSZHR0cYhnGcJImV+1yr1Xh7e2N3d5fLy0t6vR71ep35fE673WYymWTr5O851Go1Xl9fOT8/ZzqdEgQBjuMwnU5xXZdisUi32003YRgmgMzn8zSbzSQIgqxUKkkYhtn9/X1mWZZ4npfvQEQy3/cZjUYsFgvCMKTdbmNZFnt7ew/j8bgDIPwCDUjWNL9eJJUAAAAASUVORK5CYII=")',
+                    backgroundRepeat: 'repeat'
+                  }}>
                     <h3 className="text-sm font-medium mb-2 text-center">Background Removed</h3>
                     <img 
                       src={resultUrl} 
@@ -290,6 +314,34 @@ export default function BackgroundRemove() {
                     />
                   </div>
                 </div>
+                
+                {/* Comparison slider */}
+                <div className="mb-4">
+                  <h3 className="text-sm font-medium mb-2">Before / After Comparison</h3>
+                  <div className="border rounded-md p-2 overflow-hidden" style={{ 
+                    backgroundImage: 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMC8yOS8xMiKqq3kAAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzVxteM2AAABHklEQVQ4jZWTvU4CQRSFv3vZXdgFYimQbLRAwcZIQWHpK1hZ0FnzBLyAsZWSx9DSwhojhZa2JNRKwuIPERZw77Uwe4GohF3CSW7m3HPOzczcMSKCiKCUyrVWqwFQKpVwHIeXlxeiKEopYpTyff/bDev1OhcXF5imiRCCcrnM/v4+t7e3pGkKYK21FvEVrNVqDAYD0jTFdV2azSZHR0cYhnGcJImV+1yr1Xh7e2N3d5fLy0t6vR71ep35fE673WYymWTr5O851Go1Xl9fOT8/ZzqdEgQBjuMwnU5xXZdisUi32003YRgmgMzn8zSbzSQIgqxUKkkYhtn9/X1mWZZ4npfvQEQy3/cZjUYsFgvCMKTdbmNZFnt7ew/j8bgDIPwCDUjWNL9eJJUAAAAASUVORK5CYII=")',
+                    backgroundRepeat: 'repeat',
+                    height: '300px',
+                    position: 'relative'
+                  }}>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="relative h-full w-full max-h-64 flex items-center justify-center">
+                        <img 
+                          src={preview as string} 
+                          alt="Original" 
+                          className="absolute h-full max-h-64 object-contain"
+                          style={{ filter: 'opacity(0.5)' }}
+                        />
+                        <img 
+                          src={resultUrl} 
+                          alt="Result" 
+                          className="absolute h-full max-h-64 object-contain"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <Button 
                   onClick={handleDownload}
                   className="w-full bg-utility-image hover:bg-utility-image/90"

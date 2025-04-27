@@ -1,18 +1,18 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Heart, BarChart } from 'lucide-react';
+import { Heart, BarChart, Circle, Scale, ArrowRight, Activity } from 'lucide-react';
 import CategoryLayout from '@/components/CategoryLayout';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent
 } from "@/components/ui/chart";
-import { Bar, BarChart as RechartBarChart, Cell, XAxis, YAxis } from "recharts";
+import { Bar, BarChart as RechartBarChart, Cell, XAxis, YAxis, Line, LineChart, CartesianGrid, Tooltip, Legend, PieChart, Pie, ResponsiveContainer, Area, AreaChart } from "recharts";
 
 export default function BMICalculator() {
   const [weight, setWeight] = useState<number | ''>('');
@@ -20,7 +20,29 @@ export default function BMICalculator() {
   const [unit, setUnit] = useState<'metric' | 'imperial'>('metric');
   const [bmi, setBmi] = useState<number | null>(null);
   const [category, setCategory] = useState<string | null>(null);
+  const [categoryIndex, setCategoryIndex] = useState<number | null>(null);
+  const [animation, setAnimation] = useState(false);
   const { toast } = useToast();
+
+  // Health data based on BMI result
+  const [healthData, setHealthData] = useState<{
+    risk: string;
+    color: string;
+    recommendations: string[];
+  }>({
+    risk: '',
+    color: '#94a3b8',
+    recommendations: []
+  });
+
+  // Trigger animation after calculation
+  useEffect(() => {
+    if (bmi !== null) {
+      setAnimation(true);
+      const timer = setTimeout(() => setAnimation(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [bmi]);
 
   const calculateBMI = () => {
     if (weight === '' || height === '' || height <= 0 || weight <= 0) {
@@ -47,16 +69,68 @@ export default function BMICalculator() {
 
     // Determine BMI category
     let categoryValue: string;
+    let categoryIdx: number;
+    let riskLevel: string;
+    let riskColor: string;
+    let recommendations: string[] = [];
+
     if (bmiValue < 18.5) {
       categoryValue = "Underweight";
+      categoryIdx = 0;
+      riskLevel = "Moderate";
+      riskColor = "#3b82f6";
+      recommendations = [
+        "Consult with a healthcare provider",
+        "Consider a nutrient-dense diet",
+        "Regular strength training exercises",
+        "Track calorie intake to ensure sufficient energy",
+        "Gradual weight gain of 0.5-1 lb per week is recommended"
+      ];
     } else if (bmiValue < 25) {
       categoryValue = "Normal weight";
+      categoryIdx = 1;
+      riskLevel = "Low";
+      riskColor = "#22c55e";
+      recommendations = [
+        "Maintain current healthy lifestyle",
+        "Regular physical activity (150+ minutes/week)",
+        "Balanced diet rich in fruits and vegetables",
+        "Regular health check-ups",
+        "Adequate sleep and stress management"
+      ];
     } else if (bmiValue < 30) {
       categoryValue = "Overweight";
+      categoryIdx = 2;
+      riskLevel = "Increased";
+      riskColor = "#f97316";
+      recommendations = [
+        "Aim for gradual weight loss (1-2 lbs per week)",
+        "Increase physical activity to 150-300 minutes/week",
+        "Focus on portion control",
+        "Reduce intake of processed foods and added sugars",
+        "Consider working with a nutritionist"
+      ];
     } else {
       categoryValue = "Obesity";
+      categoryIdx = 3;
+      riskLevel = "High";
+      riskColor = "#ef4444";
+      recommendations = [
+        "Consult with healthcare provider for personalized plan",
+        "Gradual, sustainable lifestyle changes",
+        "Regular physical activity adapted to current fitness level",
+        "Consider behavioral therapy for long-term success",
+        "Monitor other health markers (blood pressure, cholesterol, etc.)"
+      ];
     }
+    
     setCategory(categoryValue);
+    setCategoryIndex(categoryIdx);
+    setHealthData({
+      risk: riskLevel,
+      color: riskColor,
+      recommendations
+    });
 
     toast({
       title: "BMI Calculated",
@@ -69,6 +143,12 @@ export default function BMICalculator() {
     setHeight('');
     setBmi(null);
     setCategory(null);
+    setCategoryIndex(null);
+    setHealthData({
+      risk: '',
+      color: '#94a3b8',
+      recommendations: []
+    });
   };
 
   // BMI range data for visualization
@@ -100,10 +180,57 @@ export default function BMICalculator() {
     return `${percentage}%`;
   };
 
+  // Risk distribution data
+  const riskDistributionData = [
+    { name: "Very Low", value: 10 },
+    { name: "Low", value: 15 },
+    { name: "Moderate", value: 25 },
+    { name: "High", value: 30 },
+    { name: "Very High", value: 20 }
+  ];
+
+  // Health outcomes data
+  const healthOutcomesData = [
+    { 
+      category: "Low BMI < 18.5", 
+      "Nutritional Deficiency": 65, 
+      "Bone Density Issues": 55, 
+      "Impaired Immunity": 40
+    },
+    { 
+      category: "Normal BMI 18.5-24.9", 
+      "Nutritional Deficiency": 15, 
+      "Bone Density Issues": 20, 
+      "Impaired Immunity": 10
+    },
+    { 
+      category: "Overweight BMI 25-29.9", 
+      "Nutritional Deficiency": 20, 
+      "Bone Density Issues": 30, 
+      "Impaired Immunity": 35
+    },
+    { 
+      category: "Obese BMI ≥ 30", 
+      "Nutritional Deficiency": 40, 
+      "Bone Density Issues": 55, 
+      "Impaired Immunity": 70
+    }
+  ];
+
+  // BMI trend data (example)
+  const trendData = [
+    { age: "20-29", "Average BMI": 24.2 },
+    { age: "30-39", "Average BMI": 26.8 },
+    { age: "40-49", "Average BMI": 27.9 },
+    { age: "50-59", "Average BMI": 28.4 },
+    { age: "60-69", "Average BMI": 28.1 },
+    { age: "70+", "Average BMI": 26.9 }
+  ];
+
   const renderBmiComparison = () => {
     if (!bmi) return null;
 
-    // Example comparative data (simplified)
+    // Example comparative data
     const comparisonData = [
       { range: "Your BMI", value: bmi, color: getBmiColor() },
       { range: "Healthy Range", value: 22, color: "#22c55e" }, // Green
@@ -141,6 +268,7 @@ export default function BMICalculator() {
               dataKey="value" 
               barSize={24} 
               radius={4}
+              className={animation ? "animate-pulse" : ""}
             >
               {comparisonData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
@@ -148,6 +276,143 @@ export default function BMICalculator() {
             </Bar>
           </RechartBarChart>
         </ChartContainer>
+      </div>
+    );
+  };
+
+  const renderHealthDataVisualizations = () => {
+    if (!bmi) return null;
+
+    return (
+      <div className="mt-6 space-y-6">
+        {/* Health risk gauge */}
+        <div>
+          <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+            <Activity className="h-4 w-4" /> 
+            Health Risk Assessment
+          </h3>
+          <div className="bg-muted rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Risk level:</span>
+              <span 
+                className="text-sm font-bold"
+                style={{ color: healthData.color }}
+              >
+                {healthData.risk}
+              </span>
+            </div>
+            
+            {/* Risk meter visualization */}
+            <div className="h-3 w-full bg-gray-200 rounded-full overflow-hidden mb-4">
+              <div 
+                className="h-full transition-all duration-1000 ease-out"
+                style={{ 
+                  width: categoryIndex !== null ? `${(categoryIndex / 3) * 100}%` : '0%',
+                  backgroundColor: healthData.color,
+                  transition: 'width 1s ease-out'
+                }}
+              ></div>
+            </div>
+            
+            {/* Health Recommendations */}
+            <div>
+              <h4 className="text-xs font-medium mb-2">Recommendations:</h4>
+              <ul className="list-disc list-inside space-y-1">
+                {healthData.recommendations.map((rec, index) => (
+                  <li 
+                    key={index} 
+                    className="text-xs text-muted-foreground"
+                    style={{
+                      animation: animation ? `fade-in 0.3s ease-out ${index * 0.1}s forwards` : 'none',
+                      opacity: animation ? 0 : 1
+                    }}
+                  >
+                    {rec}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        {/* Health outcomes chart */}
+        <div>
+          <h3 className="text-sm font-medium mb-3">Health Outcomes by BMI Category</h3>
+          <div className="border rounded-lg p-4 bg-card">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart
+                data={healthOutcomesData}
+                margin={{ top: 10, right: 10, left: 10, bottom: 20 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis 
+                  dataKey="category" 
+                  tick={{ fontSize: 10 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis 
+                  tick={{ fontSize: 10 }}
+                  label={{ 
+                    value: 'Risk %', 
+                    angle: -90, 
+                    position: 'insideLeft',
+                    style: { fontSize: 10 }
+                  }}
+                />
+                <Tooltip />
+                <Legend wrapperStyle={{ fontSize: '10px' }} />
+                <Bar dataKey="Nutritional Deficiency" fill="#8884d8" />
+                <Bar dataKey="Bone Density Issues" fill="#82ca9d" />
+                <Bar dataKey="Impaired Immunity" fill="#ffc658" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        {/* Age trend chart */}
+        <div>
+          <h3 className="text-sm font-medium mb-3">Average BMI Trend by Age</h3>
+          <div className="border rounded-lg p-4 bg-card">
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart
+                data={trendData}
+                margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+              >
+                <defs>
+                  <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#8884d8" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="age" />
+                <YAxis 
+                  domain={[15, 35]}
+                  ticks={[15, 20, 25, 30, 35]}
+                />
+                <Tooltip />
+                <Area 
+                  type="monotone" 
+                  dataKey="Average BMI" 
+                  stroke="#8884d8" 
+                  fillOpacity={1} 
+                  fill="url(#colorUv)"
+                />
+                {/* Normal range marker */}
+                <rect 
+                  x="0%" 
+                  y={25 - 18.5} // 25 is y-max, so we calculate percentage
+                  width="100%" 
+                  height={(25 - 18.5) - (25 - 25)} 
+                  fill="#22c55e" 
+                  fillOpacity="0.2"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     );
   };
@@ -173,6 +438,7 @@ export default function BMICalculator() {
                   setHeight('');
                   setBmi(null);
                   setCategory(null);
+                  setCategoryIndex(null);
                 }}
                 className="flex flex-wrap gap-4"
               >
@@ -245,7 +511,7 @@ export default function BMICalculator() {
             {bmi !== null && (
               <div className="mt-6 p-4 bg-muted rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
-                  <Heart className="h-6 w-6 text-utility-calculator" />
+                  <Heart className={`h-6 w-6 text-utility-calculator ${animation ? 'animate-pulse' : ''}`} />
                   <h3 className="text-lg font-medium">Your BMI Results</h3>
                 </div>
                 <div className="flex justify-between items-center mb-2">
@@ -255,13 +521,8 @@ export default function BMICalculator() {
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Category:</span>
                   <span 
-                    className={`font-medium ${
-                      category === 'Normal weight' 
-                        ? 'text-green-600 dark:text-green-400' 
-                        : category === 'Underweight' 
-                        ? 'text-blue-600 dark:text-blue-400' 
-                        : 'text-red-600 dark:text-red-400'
-                    }`}
+                    className={`font-medium ${animation ? 'animate-fade-in' : ''}`}
+                    style={{ color: getBmiColor() }}
                   >
                     {category}
                   </span>
@@ -288,7 +549,7 @@ export default function BMICalculator() {
                   <div className="relative h-6 mt-2">
                     <div className="absolute h-full w-[2px] bg-black dark:bg-white" style={{ left: calculateMarkerPosition() }}></div>
                     <div 
-                      className="absolute -top-1 transform -translate-x-1/2 h-4 w-4 rounded-full border-2 border-black dark:border-white" 
+                      className={`absolute -top-1 transform -translate-x-1/2 h-4 w-4 rounded-full border-2 border-black dark:border-white ${animation ? 'animate-pulse' : ''}`}
                       style={{ left: calculateMarkerPosition(), backgroundColor: getBmiColor() }}
                     ></div>
                     <div className="absolute top-4 transform -translate-x-1/2 text-xs font-medium" style={{ left: calculateMarkerPosition() }}>
@@ -297,8 +558,46 @@ export default function BMICalculator() {
                   </div>
                 </div>
                 
+                {/* Visual speedometer/gauge for BMI range */}
+                <div className="mt-6">
+                  <h3 className="text-sm font-medium mb-2">BMI Range</h3>
+                  <div className="relative h-36 flex items-center justify-center">
+                    {/* Semicircle gauge background */}
+                    <div className="absolute h-36 w-36 rounded-full border-[16px] border-gray-200 -bottom-6" style={{ clipPath: 'polygon(0% 50%, 100% 50%, 100% 100%, 0% 100%)' }}></div>
+                    
+                    {/* Gauge colored sections */}
+                    <div className="absolute h-36 w-36 rounded-full border-[16px] border-blue-500 -bottom-6" style={{ clipPath: 'polygon(0% 50%, 25% 50%, 25% 100%, 0% 100%)' }}></div>
+                    <div className="absolute h-36 w-36 rounded-full border-[16px] border-green-500 -bottom-6" style={{ clipPath: 'polygon(25% 50%, 50% 50%, 50% 100%, 25% 100%)' }}></div>
+                    <div className="absolute h-36 w-36 rounded-full border-[16px] border-orange-500 -bottom-6" style={{ clipPath: 'polygon(50% 50%, 75% 50%, 75% 100%, 50% 100%)' }}></div>
+                    <div className="absolute h-36 w-36 rounded-full border-[16px] border-red-500 -bottom-6" style={{ clipPath: 'polygon(75% 50%, 100% 50%, 100% 100%, 75% 100%)' }}></div>
+                    
+                    {/* Needle */}
+                    <div 
+                      className="absolute bottom-0 h-32 w-1 bg-black dark:bg-white origin-bottom transform transition-all duration-1000"
+                      style={{ 
+                        rotate: bmi ? `${Math.min((bmi - 10) / 30 * 180, 180)}deg` : '0deg'
+                      }}
+                    >
+                      <div className="absolute -left-1.5 -top-1.5 w-3 h-3 rounded-full bg-black dark:bg-white"></div>
+                    </div>
+                    
+                    {/* BMI value labels */}
+                    <div className="absolute -bottom-2 left-0 text-xs">10</div>
+                    <div className="absolute -bottom-2 left-1/4 text-xs">18.5</div>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs">25</div>
+                    <div className="absolute -bottom-2 left-3/4 text-xs">30</div>
+                    <div className="absolute -bottom-2 right-0 text-xs">40</div>
+                    
+                    {/* Current value */}
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-lg font-bold">{bmi || "-"}</div>
+                  </div>
+                </div>
+                
                 {/* BMI Comparison Chart */}
                 {renderBmiComparison()}
+                
+                {/* Additional health visualizations */}
+                {renderHealthDataVisualizations()}
               </div>
             )}
           </div>

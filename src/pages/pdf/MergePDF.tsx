@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Merge, Trash, Download, Plus } from 'lucide-react';
 import CategoryLayout from '@/components/CategoryLayout';
 import { Progress } from '@/components/ui/progress';
+import { PDFDocument } from 'pdf-lib';
 
 export default function MergePDF() {
   const [files, setFiles] = useState<File[]>([]);
@@ -61,37 +62,56 @@ export default function MergePDF() {
     setIsProcessing(true);
     setProgress(0);
     
-    // Simulate progress with intervals
-    const progressInterval = setInterval(() => {
-      setProgress(prev => {
-        const newProgress = prev + Math.random() * 15;
-        return newProgress >= 95 ? 95 : newProgress;
-      });
-    }, 500);
-    
     try {
-      // In a real app, this is where you would use a PDF library to merge the files
-      // For this demo, we'll simulate processing
+      // Create a new PDF document
+      const mergedPdf = await PDFDocument.create();
       
-      // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Process each file
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Update progress
+        setProgress((i / files.length) * 90);
+        
+        try {
+          // Read the file
+          const fileArrayBuffer = await file.arrayBuffer();
+          
+          // Load the PDF document
+          const pdfDoc = await PDFDocument.load(fileArrayBuffer);
+          
+          // Copy pages from the source PDF to the merged PDF
+          const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+          copiedPages.forEach(page => mergedPdf.addPage(page));
+          
+        } catch (error) {
+          console.error(`Error processing file ${file.name}:`, error);
+          toast({
+            title: `Error processing file: ${file.name}`,
+            description: "This PDF may be corrupt or password-protected.",
+            variant: "destructive",
+          });
+        }
+      }
       
-      // Create a dummy blob to represent the merged PDF
-      // In a real implementation, this would be the result from a PDF merge library
-      const dummyContent = new Blob(['PDF content would be here'], { type: 'application/pdf' });
+      setProgress(95);
       
-      // Create a URL for the dummy blob
-      const url = URL.createObjectURL(dummyContent);
+      // Save the merged PDF
+      const mergedPdfBytes = await mergedPdf.save();
+      
+      // Convert to blob and create URL
+      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
       setResultUrl(url);
       
       setProgress(100);
-      clearInterval(progressInterval);
       
       toast({
         title: "Merge successful!",
         description: "Your PDFs have been merged successfully.",
       });
     } catch (error) {
+      console.error("PDF merge error:", error);
       toast({
         title: "Merge failed",
         description: "An error occurred while merging your PDFs.",
