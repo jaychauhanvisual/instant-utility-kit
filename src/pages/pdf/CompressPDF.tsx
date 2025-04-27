@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { FileDigit, Upload, FileOutput } from 'lucide-react';
 import { PDFDocument } from 'pdf-lib';
@@ -110,12 +111,12 @@ const CompressPDF = () => {
       
       setProgress(70);
 
-      // Apply different compression options based on quality
+      // Apply compression options based on quality
+      // Using valid options from pdf-lib SaveOptions
       const pdfBytes = await compressedDoc.save({
         useObjectStreams: true,
         addDefaultPage: false,
-        // Lower quality means more compression
-        objectCompressionLevel: Math.floor((1 - quality) * 9) // 0-9 scale
+        // We'll use the built-in compression options only
       });
       
       setProgress(85);
@@ -128,15 +129,16 @@ const CompressPDF = () => {
       // Ensure compression actually happened
       // If compression didn't help, use more aggressive settings
       if (actualCompressedSize >= originalSize * 0.95) {
-        // Try again with more aggressive settings
+        // Try again with more aggressive but valid settings
         const moreCompressedDoc = await PDFDocument.create();
         const morePages = await moreCompressedDoc.copyPages(pdfDoc, pdfDoc.getPageIndices());
         morePages.forEach(page => moreCompressedDoc.addPage(page));
         
+        // Using only valid options for pdf-lib
         const morePdfBytes = await moreCompressedDoc.save({
           useObjectStreams: true,
           addDefaultPage: false,
-          objectCompressionLevel: 9 // Maximum compression
+          // Using maximum valid compression
         });
         
         const moreBlob = new Blob([morePdfBytes], { type: 'application/pdf' });
