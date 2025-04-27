@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MoonIcon, SunIcon, SearchIcon } from 'lucide-react';
@@ -145,7 +144,7 @@ export default function Navbar() {
             />
           </div>
           <Button type="submit" size="sm" className="rounded-full px-4">Search</Button>
-        </div>
+        </form>
 
         <div className="flex items-center gap-4">
           <Button
