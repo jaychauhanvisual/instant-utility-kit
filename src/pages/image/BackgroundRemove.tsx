@@ -12,6 +12,7 @@ export default function BackgroundRemove() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,6 +36,7 @@ export default function BackgroundRemove() {
       reader.onload = (e) => {
         if (e.target) {
           setPreview(e.target.result as string);
+          setResultUrl(null); // Reset the result when a new image is selected
         }
       };
       reader.readAsDataURL(selectedFile);
@@ -58,26 +60,95 @@ export default function BackgroundRemove() {
 
     setIsProcessing(true);
     
-    // Simulate processing with timeout
-    setTimeout(() => {
+    // Create a canvas to process the image
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
       setIsProcessing(false);
+      toast({
+        title: "Processing error",
+        description: "Failed to create canvas context.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const img = new Image();
+    img.onload = () => {
+      // Set canvas dimensions to image dimensions
+      canvas.width = img.width;
+      canvas.height = img.height;
       
-      // In a real implementation, this would be where you'd call a background removal API
-      // For this demo, we're just simulating success
-      setResultUrl(preview);
+      // Draw the image onto the canvas
+      ctx.drawImage(img, 0, 0);
+      
+      // Get the image data
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      
+      // Simple background removal using color threshold
+      // This is a very basic approach that removes white/light backgrounds
+      const threshold = 240; // Adjust this threshold as needed
+      
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        
+        // If the pixel is close to white, make it transparent
+        if (r > threshold && g > threshold && b > threshold) {
+          data[i + 3] = 0; // Set alpha to 0
+        }
+      }
+      
+      // Put the processed image data back onto the canvas
+      ctx.putImageData(imageData, 0, 0);
+      
+      // Convert the canvas to a data URL and set it as the result
+      const resultDataUrl = canvas.toDataURL('image/png');
+      setResultUrl(resultDataUrl);
+      setIsProcessing(false);
       
       toast({
         title: "Background removed!",
         description: "Your image background has been removed successfully.",
       });
-    }, 2000);
+    };
+    
+    img.onerror = () => {
+      setIsProcessing(false);
+      toast({
+        title: "Image error",
+        description: "Failed to load image for processing.",
+        variant: "destructive",
+      });
+    };
+    
+    img.src = preview as string;
   };
 
   const handleDownload = () => {
-    // In a real implementation, this would download the processed image
+    if (!resultUrl) {
+      toast({
+        title: "No processed image",
+        description: "Please process an image first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create an anchor element to trigger the download
+    const link = document.createElement('a');
+    link.href = resultUrl;
+    link.download = `no-bg-${file?.name?.split('.')[0] || 'image'}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
     toast({
-      title: "Feature coming soon",
-      description: "Download functionality will be available in the next update.",
+      title: "Download started",
+      description: "Your image is being downloaded.",
     });
   };
 
@@ -151,13 +222,17 @@ export default function BackgroundRemove() {
               </div>
             )}
             
-            {/* Step 3: Download result (shown only when a result is available) */}
+            {/* Step 3: Result and Download */}
             {resultUrl && (
               <div>
-                <h2 className="text-lg font-medium mb-4">3. Download image</h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Your image with background removed will be saved as a PNG with transparency.
-                </p>
+                <h2 className="text-lg font-medium mb-4">3. Result</h2>
+                <div className="border rounded-md p-2 flex justify-center bg-gray-100 dark:bg-gray-700 mb-4" style={{ backgroundImage: 'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMC8yOS8xMiKqq3kAAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzVxteM2AAABHklEQVQ4jZWTvU4CQRSFv3vZXdgFYimQbLRAwcZIQWHpK1hZ0FnzBLyAsZWSx9DSwhojhZa2JNRKwuIPERZw77Uwe4GohF3CSW7m3HPOzczcMSKCiKCUyrVWqwFQKpVwHIeXlxeiKEopYpTyff/bDev1OhcXF5imiRCCcrnM/v4+t7e3pGkKYK21FvEVrNVqDAYD0jTFdV2azSZHR0cYhnGcJImV+1yr1Xh7e2N3d5fLy0t6vR71ep35fE673WYymWTr5O851Go1Xl9fOT8/ZzqdEgQBjuMwnU5xXZdisUi32003YRgmgMzn8zSbzSQIgqxUKkkYhtn9/X1mWZZ4npfvQEQy3/cZjUYsFgvCMKTdbmNZFnt7ew/j8bgDIPwCDUjWNL9eJJUAAAAASUVORK5CYII=")', backgroundRepeat: 'repeat' }}>
+                  <img 
+                    src={resultUrl} 
+                    alt="Processed" 
+                    className="max-h-64 object-contain"
+                  />
+                </div>
                 <Button 
                   onClick={handleDownload}
                   className="w-full bg-utility-image hover:bg-utility-image/90"

@@ -21,6 +21,10 @@ import BackgroundRemove from "./pages/image/BackgroundRemove";
 
 // Calculator Tool Routes
 import CalculatorTools from "./pages/calculator";
+import BMICalculator from "./pages/calculator/bmi";
+import LoanCalculator from "./pages/calculator/loan";
+import AgeCalculator from "./pages/calculator/age";
+import PercentageCalculator from "./pages/calculator/percentage";
 
 // Text Tool Routes
 import TextTools from "./pages/text";
@@ -53,6 +57,10 @@ const App = () => (
           
           {/* Calculator Tools */}
           <Route path="/calculator" element={<CalculatorTools />} />
+          <Route path="/calculator/bmi" element={<BMICalculator />} />
+          <Route path="/calculator/loan" element={<LoanCalculator />} />
+          <Route path="/calculator/age" element={<AgeCalculator />} />
+          <Route path="/calculator/percentage" element={<PercentageCalculator />} />
           
           {/* Text Tools */}
           <Route path="/text" element={<TextTools />} />

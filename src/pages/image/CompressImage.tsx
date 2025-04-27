@@ -41,6 +41,7 @@ export default function CompressImage() {
       reader.onload = (e) => {
         if (e.target) {
           setPreview(e.target.result as string);
+          setResultUrl(null); // Reset the result when a new image is selected
         }
       };
       reader.readAsDataURL(selectedFile);
@@ -64,23 +65,58 @@ export default function CompressImage() {
 
     setIsProcessing(true);
     
-    // Simulate processing with timeout
-    setTimeout(() => {
+    // Create a canvas to compress the image
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      setIsProcessing(false);
+      toast({
+        title: "Processing error",
+        description: "Failed to create canvas context.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const img = new Image();
+    img.onload = () => {
+      // Set canvas dimensions to image dimensions
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Draw the image onto the canvas
+      ctx.drawImage(img, 0, 0);
+      
+      // Convert the canvas to a data URL with the desired quality
+      const resultDataUrl = canvas.toDataURL('image/jpeg', quality / 100);
+      setResultUrl(resultDataUrl);
+      
+      // Calculate compressed size
+      // The data URL string length - header length divided by 4/3 (base64 encoding ratio) gives an approximation
+      const header = 'data:image/jpeg;base64,';
+      const base64Str = resultDataUrl.substring(header.length);
+      const compressedBytes = Math.ceil((base64Str.length * 3) / 4);
+      setCompressedSize(compressedBytes);
+      
       setIsProcessing(false);
       
-      // In a real implementation, this would be where you'd call an image compression service
-      // For this demo, we're just simulating success
-      setResultUrl(preview);
-      
-      // Simulate compression result
-      const simulatedCompressedSize = Math.floor(originalSize * (quality / 100) * 0.7);
-      setCompressedSize(simulatedCompressedSize);
-      
       toast({
-        title: "Compression successful!",
+        title: "Image compressed!",
         description: "Your image has been compressed successfully.",
       });
-    }, 1500);
+    };
+    
+    img.onerror = () => {
+      setIsProcessing(false);
+      toast({
+        title: "Image error",
+        description: "Failed to load image for compression.",
+        variant: "destructive",
+      });
+    };
+    
+    img.src = preview as string;
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -92,10 +128,26 @@ export default function CompressImage() {
   };
 
   const handleDownload = () => {
-    // In a real implementation, this would download the compressed image
+    if (!resultUrl) {
+      toast({
+        title: "No compressed image",
+        description: "Please compress an image first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create an anchor element to trigger the download
+    const link = document.createElement('a');
+    link.href = resultUrl;
+    link.download = `compressed-${file?.name?.split('.')[0] || 'image'}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
     toast({
-      title: "Feature coming soon",
-      description: "Download functionality will be available in the next update.",
+      title: "Download started",
+      description: "Your compressed image is being downloaded.",
     });
   };
 
@@ -226,6 +278,14 @@ export default function CompressImage() {
                     <span className="font-medium">Reduction:</span>
                     <span>{Math.round(((originalSize - compressedSize) / originalSize) * 100)}%</span>
                   </div>
+                </div>
+                
+                <div className="border rounded-md p-2 flex justify-center mb-4">
+                  <img 
+                    src={resultUrl} 
+                    alt="Compressed" 
+                    className="max-h-48 object-contain"
+                  />
                 </div>
                 
                 <Button 
