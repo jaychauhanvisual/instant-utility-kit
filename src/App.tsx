@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +10,7 @@ import Explore from "./pages/Explore";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import FAQ from "./pages/FAQ";
 
 // PDF Tool Routes
 import PDFTools from "./pages/pdf";
@@ -57,6 +57,7 @@ const App = () => {
               <Route path="/explore" element={<Explore />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/faq" element={<FAQ />} />
               
               {/* PDF Tools */}
               <Route path="/pdf" element={<PDFTools />} />
